@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TABUNGAN ASET DIGITAL</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config={theme:{extend:{}}}</script>
+  <style>
+    /* Background image baru */
+    body {
+      background: url('/mnt/data/1000_F_267921195_q2dlH51KqUlpK4CBWALgeHcRZ8XfTfS9.jpg') center/cover no-repeat fixed;
+      color: #fff;
+      position: relative;
+    }
+    body::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 0;
+    }
+    aside, header, main {
+      position: relative; z-index: 1;
+    }
+
+    .sidebar-link.active { @apply bg-gray-200 }
+    .input-field label { display:block; font-size:.875rem; margin-bottom:.25rem; color:#fff }
+    .input-field input, .input-field select {
+      width:100%; padding:.5rem; border:1px solid #E2E8F0; border-radius:.375rem;
+      background: rgba(255,255,255,0.1); color:#fff;
+    }
+    table {
+      width:100%; border-collapse:collapse; background: rgba(255,255,255,0.1);
+    }
+    th, td {
+      padding:.75rem; border:1px solid #E2E8F0; text-align:left; color:#fff;
+    }
+    .card {
+      background: rgba(255,255,255,0.1); border-radius:.75rem;
+      box-shadow:0 1px 3px rgba(0,0,0,0.1); padding:1rem; text-align:center;
+      color:#fff;
+    }
+    button.sell, button.delete {
+      padding:.25rem .5rem; border:none; border-radius:.375rem; cursor:pointer;
+    }
+    button.sell { background:#3182ce; color:#fff; }
+    button.sell:hover { background:#2c5282 }
+    button.delete { background:#e53e3e; color:#fff; margin-left:.25rem; }
+    button.delete:hover { background:#c53030 }
+
+    /* toast */
+    #toast {
+      position:fixed; top:1rem; right:1rem;
+      background:#38a169; color:white; padding:.5rem 1rem;
+      border-radius:.375rem; box-shadow:0 2px 6px rgba(0,0,0,0.2);
+      opacity:0; transition:opacity .3s; z-index:2;
+    }
+    #toast.show { opacity:1 }
+    .asset-logo {
+      width:1.25rem; vertical-align:middle; margin-right:.25rem;
+    }
+  </style>
+</head>
+<body class="flex h-screen">
+  <div id="toast"></div>
+
+  <aside class="w-64 bg-white bg-opacity-20 shadow-md flex flex-col">
+    <div class="p-6"><h1 class="text-2xl font-bold text-white">TABUNGAN ASET DIGITAL</h1></div>
+    <nav class="flex-1">
+      <a href="#" class="sidebar-link block px-6 py-2 hover:bg-gray-200 hover:bg-opacity-30">Dashboard</a>
+      <a href="#" class="sidebar-link active block px-6 py-2 hover:bg-gray-200 hover:bg-opacity-30">Input Transaksi</a>
+      <a href="#" class="sidebar-link block px-6 py-2 hover:bg-gray-200 hover:bg-opacity-30">History Transaksi</a>
+    </nav>
+    <div class="p-6 text-center text-sm text-white opacity-70">&copy; 2025 TABUNGAN ASET DIGITAL</div>
+  </aside>
+
+  <div class="flex-1 flex flex-col overflow-hidden">
+    <header class="flex justify-between items-center bg-white bg-opacity-20 shadow p-4">
+      <h2 class="text-xl font-semibold text-white">Input Transaksi</h2>
+      <button class="px-4 py-2 bg-gray-500 bg-opacity-70 text-white rounded hover:bg-gray-600 hover:bg-opacity-80" onclick="location.reload()">Kembali</button>
+    </header>
+    <main class="p-6 overflow-auto">
+      <div class="bg-white bg-opacity-20 rounded-2xl shadow p-6 space-y-6">
+        <form id="contribForm" class="grid grid-cols-1 md:grid-cols-5 gap-6">
+          <div class="input-field">
+            <label for="date">Tanggal Beli</label>
+            <input type="date" id="date" required>
+          </div>
+          <div class="input-field">
+            <label for="asset">Aset</label>
+            <select id="asset" required>
+              <option value="ETH">Ethereum</option>
+              <option value="EMAS">Emas</option>
+              <option value="SP500">S&P500</option>
+            </select>
+          </div>
+          <div class="input-field">
+            <label for="action">Aksi</label>
+            <select id="action" required>
+              <option value="Beli">Beli</option>
+              <option value="Jual">Jual</option>
+            </select>
+          </div>
+          <div class="input-field">
+            <label for="buyPrice">Harga Beli (IDR)</label>
+            <input type="number" id="buyPrice" placeholder="e.g. 25000000" required>
+          </div>
+          <div class="input-field" id="sellField" style="display:none;">
+            <label for="sellDate">Tanggal Jual</label>
+            <input type="date" id="sellDate">
+            <label for="sellPrice" class="mt-2">Harga Jual (IDR)</label>
+            <input type="number" id="sellPrice" placeholder="e.g. 26000000">
+          </div>
+          <div class="input-field">
+            <label for="amount">Jumlah</label>
+            <input type="number" id="amount" step="any" placeholder="e.g. 0.1" required>
+          </div>
+          <div class="input-field">
+            <label for="profit">Untung per Trade (IDR)</label>
+            <input type="text" id="profit" readonly>
+          </div>
+          <div class="input-field">
+            <label for="total">Total (IDR)</label>
+            <input type="text" id="total" readonly>
+          </div>
+          <div class="flex items-end md:col-span-5">
+            <button type="submit" class="w-full bg-blue-600 bg-opacity-90 text-white py-2 rounded-xl hover:bg-blue-700 hover:bg-opacity-95">Simpan</button>
+          </div>
+        </form>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div class="card"><h4 class="text-sm text-white opacity-80">Total Transaksi</h4><p id="countTrades" class="text-2xl font-bold">0</p></div>
+          <div class="card"><h4 class="text-sm text-white opacity-80">Jumlah Net Aset</h4><p id="sumCoins" class="text-2xl font-bold">0</p></div>
+          <div class="card"><h4 class="text-sm text-white opacity-80">Total Untung/Rugi (IDR)</h4><p id="sumProfit" class="text-2xl font-bold">0</p></div>
+          <div class="card"><h4 class="text-sm text-white opacity-80">Rata-Rata Nilai per Transaksi (IDR)</h4><p id="avgTotal" class="text-2xl font-bold">0</p></div>
+        </div>
+      </div>
+
+      <div class="mt-6 bg-white bg-opacity-20 rounded-2xl shadow p-6">
+        <h3 class="text-lg font-semibold text-white mb-4">History Transaksi</h3>
+        <table>
+          <thead class="bg-gray-50 bg-opacity-20">
+            <tr>
+              <th>Aset</th><th>Tgl Beli</th><th>Tgl Jual</th><th>Harga Beli</th><th>Harga Jual</th><th>Jumlah</th><th>Untung</th><th>Total</th><th>Aksi</th>
+            </tr>
+          </thead>
+          <tbody id="contribTable"></tbody>
+        </table>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    // Elemen
+    const dateEl     = document.getElementById('date'),
+          assetEl    = document.getElementById('asset'),
+          actionEl   = document.getElementById('action'),
+          buyEl      = document.getElementById('buyPrice'),
+          sellEl     = document.getElementById('sellPrice'),
+          sellDateEl = document.getElementById('sellDate'),
+          amountEl   = document.getElementById('amount'),
+          profitEl   = document.getElementById('profit'),
+          totalEl    = document.getElementById('total'),
+          sellField  = document.getElementById('sellField'),
+          tableBody  = document.getElementById('contribTable'),
+          countEl    = document.getElementById('countTrades'),
+          coinsEl    = document.getElementById('sumCoins'),
+          profitSum  = document.getElementById('sumProfit'),
+          avgEl      = document.getElementById('avgTotal'),
+          toast      = document.getElementById('toast');
+    let contributions = JSON.parse(localStorage.getItem('contributions') || '[]');
+    const ETH_LOGO   = 'https://upload.wikimedia.org/wikipedia/commons/6/6f/Ethereum-icon-purple.svg';
+    const GOLD_LOGO  = 'https://upload.wikimedia.org/wikipedia/commons/8/8b/Gold_ingot_icon.png';
+    const SP500_LOGO = 'https://upload.wikimedia.org/wikipedia/commons/2/24/S%26P_500_logo.svg';
+    const DELETE_PASSWORD = 'Rutanmamuju1';
+
+    function formatIDR(n) {
+      return new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR'}).format(n);
+    }
+
+    function showToast(msg) {
+      toast.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 3000);
+    }
+
+    function compute() {
+      const b = parseFloat(buyEl.value) || 0,
+            a = parseFloat(amountEl.value) || 0;
+      let p = 0, t = 0;
+      if (actionEl.value === 'Beli') {
+        p = 0; t = b * a;
+      } else {
+        const s = parseFloat(sellEl.value) || 0;
+        p = (s - b) * a; t = s * a;
+      }
+      profitEl.value = formatIDR(p);
+      totalEl.value  = formatIDR(t);
+    }
+    actionEl.addEventListener('change', () => {
+      sellField.style.display = actionEl.value === 'Jual' ? 'block' : 'none';
+      compute();
+    });
+    [buyEl, sellEl, amountEl].forEach(el => el.addEventListener('input', compute));
+
+    function updateSummary() {
+      const count    = contributions.length,
+            sumCoins = contributions.reduce((sum,c) => c.sellDate ? sum : sum + c.amount, 0),
+            sumProf  = contributions.reduce((sum,c) => sum + c.profit, 0),
+            sumTot   = contributions.reduce((sum,c) => sum + c.total, 0),
+            avg      = count ? sumTot / count : 0;
+      countEl.textContent = count;
+      coinsEl.textContent = sumCoins.toFixed(6);
+      profitSum.textContent = formatIDR(sumProf);
+      avgEl.textContent    = formatIDR(avg);
+    }
+
+    function render() {
+      tableBody.innerHTML = '';
+      contributions.forEach((c,i) => {
+        const logoMap = { 'ETH': ETH_LOGO, 'EMAS': GOLD_LOGO, 'SP500': SP500_LOGO };
+        const logo = `<img src="${logoMap[c.asset]}" class="asset-logo" alt="${c.asset}">`;
+        const sellBtn   = c.sellDate ? '' : `<button class="sell" data-index="${i}">Jual</button>`;
+        const deleteBtn = `<button class="delete" data-index="${i}">Hapus</button>`;
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${logo}${c.asset}</td>
+          <td>${c.buyDate}</td>
+          <td>${c.sellDate || '-'}</td>
+          <td>${formatIDR(c.buy)}</td>
+          <td>${c.sell ? formatIDR(c.sell) : '-'}</td>
+          <td>${c.amount}</td>
+          <td>${formatIDR(c.profit)}</td>
+          <td>${formatIDR(c.total)}</td>
+          <td>${sellBtn}${deleteBtn}</td>
+        `;
+        tableBody.appendChild(tr);
+      });
+      updateSummary();
+    }
+
+    document.addEventListener('DOMContentLoaded', render);
+
+    document.getElementById('contribForm').addEventListener('submit', e => {
+      e.preventDefault();
+      const entry = {
+        buyDate:  dateEl.value,
+        asset:    assetEl.value,
+        sellDate: null,
+        action:   actionEl.value,
+        buy:      parseFloat(buyEl.value),
+        sell:     actionEl.value === 'Jual' ? parseFloat(sellEl.value) : null,
+        amount:   parseFloat(amountEl.value),
+        profit:   parseFloat(profitEl.value.replace(/[^0-9.-]+/g,'')),
+        total:    parseFloat(totalEl.value.replace(/[^0-9.-]+/g,''))
+      };
+      if (entry.action === 'Jual') {
+        entry.sellDate = sellDateEl.value || new Date().toISOString().split('T')[0];
+      }
+      contributions.push(entry);
+      localStorage.setItem('contributions', JSON.stringify(contributions));
+      if (entry.action === 'Jual') {
+        showToast(`Jual ${entry.amount} ${entry.asset} — Beli: ${formatIDR(entry.buy)} / Jual: ${formatIDR(entry.sell)} / Untung: ${formatIDR(entry.profit)}`);
+      }
+      render();
+      e.target.reset();
+      profitEl.value = totalEl.value = '';
+      sellField.style.display = 'none';
+    });
+
+    tableBody.addEventListener('click', e => {
+      const idx = +e.target.dataset.index;
+
+      // Jual dengan input jumlah & harga
+      if (e.target.classList.contains('sell')) {
+        const c = contributions[idx];
+
+        const qtyStr = prompt(`Masukkan jumlah ${c.asset} yang ingin dijual (maks: ${c.amount}):`);
+        const sellQty = parseFloat(qtyStr);
+        if (isNaN(sellQty) || sellQty <= 0 || sellQty > c.amount) {
+          showToast('Jumlah tidak valid, aksi jual dibatalkan.');
+          return;
+        }
+
+        const priceStr = prompt(
+          `Masukkan harga jual per unit (IDR) untuk ${sellQty} ${c.asset}:`
+        );
+        const sellPrice = parseFloat(priceStr);
+        if (isNaN(sellPrice) || sellPrice <= 0) {
+          showToast('Harga tidak valid, aksi jual dibatalkan.');
+          return;
+        }
+
+        c.sellDate = new Date().toISOString().split('T')[0];
+        c.action   = 'Jual';
+        c.sell     = sellPrice;
+        c.amount   = sellQty;
+        c.profit   = (sellPrice - c.buy) * sellQty;
+        c.total    = sellPrice * sellQty;
+
+        localStorage.setItem('contributions', JSON.stringify(contributions));
+
+        showToast(
+          `Jual ${sellQty} ${c.asset} — Harga: ${formatIDR(sellPrice)} — Untung: ${formatIDR(c.profit)}`
+        );
+
+        render();
+      }
+
+      // Hapus dengan password
+      if (e.target.classList.contains('delete')) {
+        const pwd = prompt('Masukkan password untuk menghapus data:');
+        if (pwd === DELETE_PASSWORD) {
+          contributions.splice(idx, 1);
+          localStorage.setItem('contributions', JSON.stringify(contributions));
+          showToast('Data transaksi berhasil dihapus.');
+          render();
+        } else {
+          showToast('Password salah, aksi dibatalkan.');
+        }
+      }
+    });
+  </script>
+</body>
+</html>
