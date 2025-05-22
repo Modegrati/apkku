@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard TabungETH &amp; S&amp;P500</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config={theme:{extend:{}}}</script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+  <style>
+    body { background: url('https://example.com/bitcoin-bg.jpg') center/cover no-repeat fixed; color: #e2e8f0; }
+    .sidebar-link.active { @apply bg-gray-700 text-white }
+    .card { background: rgba(255,255,255,0.85); border-radius: .75rem; padding: 1rem; text-align: center; color: #0f172a; }
+    .panel { background: #1e293b; border-radius: 1rem; padding: 1.5rem; color: #e2e8f0; }
+    .sidebar-link, .header-btn { transition: background .2s; }
+  </style>
+</head>
+<body class="flex overflow-hidden h-screen">
+  <aside id="sidebar" class="fixed inset-y-0 left-0 z-30 w-64 bg-gray-800 shadow-md flex flex-col transform -translate-x-full md:translate-x-0 transition-transform duration-200 ease-in-out">
+    <div class="p-6"><h1 class="text-2xl font-bold text-white">TabungETH &amp; S&amp;P500</h1></div>
+    <nav class="flex-1">
+      <a href="index.html" class="sidebar-link block px-6 py-2 hover:bg-gray-700 text-gray-300">Dashboard</a>
+      <a href="APLIKASI.html" class="sidebar-link block px-6 py-2 hover:bg-gray-700 text-gray-300">Input Setoran</a>
+    </nav>
+    <div class="p-6 text-sm text-gray-400">&copy; 2025 TabungETH &amp; S&amp;P500</div>
+  </aside>
+  <div class="flex-1 flex flex-col md:ml-64">
+    <header class="bg-gray-900 p-4 flex justify-between items-center">
+      <div class="flex items-center">
+        <button id="mobileMenuBtn" class="md:hidden p-2 text-gray-400 focus:outline-none">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+        </button>
+        <h2 class="ml-2 text-xl font-semibold text-white">Dashboard</h2>
+      </div>
+      <button id="clearBtn" class="header-btn bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700">Clear All</button>
+    </header>
+    <main class="p-6 overflow-auto flex-1">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+        <div class="card"><h3 class="text-sm">Total ETH (USD)</h3><p id="totalEth" class="text-2xl font-bold">–</p></div>
+        <div class="card"><h3 class="text-sm">Total S&P500 (USD)</h3><p id="totalSp" class="text-2xl font-bold">–</p></div>
+        <div class="card"><h3 class="text-sm">Setoran Bulan Ini</h3><p id="thisMonth" class="text-2xl font-bold">–</p></div>
+        <div class="card"><h3 class="text-sm">CAGR (3 Tahun)</h3><p id="cagr" class="text-2xl font-bold">–</p></div>
+      </div>
+      <div class="panel mb-6">
+        <h3 class="text-lg font-semibold text-green-400 mb-4">Live ETH Price (Line Chart)</h3>
+        <canvas id="portfolioChart" class="w-full h-64"></canvas>
+      </div>
+      <div class="panel">
+        <h3 class="text-lg font-semibold text-white mb-2">Target 3 Tahun: $20,000</h3>
+        <div class="w-full bg-gray-700 rounded-full h-2">
+          <div id="goalProgress" class="bg-green-500 h-2 rounded-full" style="width:0%"></div>
+        </div>
+        <p id="goalPercent" class="mt-2 text-sm text-gray-300">0% tercapai</p>
+      </div>
+    </main>
+  </div>
+  <script>
+    document.getElementById('mobileMenuBtn').addEventListener('click', () => {
+      document.getElementById('sidebar').classList.toggle('-translate-x-full');
+    });
+    async function fetchLive() {
+      try {
+        const res = await fetch('https://api.coingecko.com/api/v3/coins/ethereum/market_chart?vs_currency=usd&days=1');
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const json = await res.json();
+        return json.prices.map(p => ({ x: new Date(p[0]), y: p[1] }));
+      } catch (err) {
+        console.error('Fetch error:', err);
+        return [];
+      }
+    }
+    document.addEventListener('DOMContentLoaded', async () => {
+      const ctx = document.getElementById('portfolioChart').getContext('2d');
+      const chart = new Chart(ctx, {
+        type: 'line', data: { datasets: [{ label: 'ETH Close Price', data: [], borderColor: '#00ff00', borderWidth: 2, pointRadius: 0, fill: false }] },
+        options: {
+          responsive: true, scales: {
+            x: { type: 'time', time: { unit: 'hour' }, grid: { color: '#334155' }, ticks: { color: '#cbd5e1' } },
+            y: { beginAtZero: false, grid: { color: '#334155' }, ticks: { color: '#cbd5e1' } }
+          }, plugins: { legend: { display: false } }
+        }
+      });
+      async function updateChart() {
+        const data = await fetchLive();
+        chart.data.datasets[0].data = data;
+        chart.update();
+        const last = data.length ? data[data.length - 1].y : null;
+        document.getElementById('totalEth').textContent = last ? `$${last.toLocaleString()}` : '–';
+      }
+      await updateChart(); setInterval(updateChart, 60000);
+      document.getElementById('clearBtn').addEventListener('click', () => {
+        chart.data.datasets[0].data = [];
+        chart.update();
+        document.getElementById('totalEth').textContent = '–';
+        document.getElementById('totalSp').textContent = '–'; document.getElementById('thisMonth').textContent = '–'; document.getElementById('cagr').textContent = '–';
+        document.getElementById('goalProgress').style.width = '0%'; document.getElementById('goalPercent').textContent = '0% tercapai';
+      });
+    });
+  </script>
+</body>
+</html>
